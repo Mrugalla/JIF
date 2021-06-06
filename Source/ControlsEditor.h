@@ -111,6 +111,31 @@ protected:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Knob)
 };
 
+struct PhaseKnob :
+    public Knob
+{
+    PhaseKnob(juce::AudioProcessorValueTreeState& apvts, param::ID id, const juce::Colour col, JIFViewer& v) :
+        Knob(apvts, id, col),
+        viewer(v)
+    {}
+protected:
+    JIFViewer& viewer;
+
+    void mouseUp(const juce::MouseEvent& evt) override {
+        Knob::mouseUp(evt);
+        viewer.unfreeze();
+    }
+    void mouseDrag(const juce::MouseEvent& evt) override {
+        Knob::mouseDrag(evt);
+        const auto start = viewer.jif.loopStart;
+        const auto end = viewer.jif.loopEnd;
+        const auto range = static_cast<float>(end - start);
+        const auto value = param.getValue();
+        const auto imgIdx = (start + static_cast<int>(range * value)) % end;
+        viewer.freeze(imgIdx);
+    }
+};
+
 struct Link : public juce::HyperlinkButton {
     Link(const juce::String& name, const juce::String& path, float fontSize, const juce::Colour col) :
         juce::HyperlinkButton(name, juce::URL(path))
@@ -153,18 +178,22 @@ protected:
 };
 
 struct LoopRangeParam :
-    public juce::Component 
+    public juce::Component,
+    public JIFViewerListener
 {
-    LoopRangeParam(JIFAudioProcessor& p, jif::JIF& jf) :
+    LoopRangeParam(JIFAudioProcessor& p, JIFViewer& v) :
         juce::Component(),
         processor(p),
-        jif(jf)
+        viewer(v),
+        jif(v.jif)
     {
     }
 protected:
     JIFAudioProcessor& processor;
+    JIFViewer& viewer;
     jif::JIF& jif;
 
+    void viewerUpdated() override { repaint(); }
     void paint(juce::Graphics& g) override {
         const auto numImages = static_cast<float>(jif.numImages());
         const auto width = static_cast<float>(getWidth());
@@ -183,18 +212,24 @@ protected:
         }
     }
 
-    void mouseDrag(const juce::MouseEvent& evt) override { updateLoopCues(evt.position.x, evt.mods.isLeftButtonDown()); }
-    void mouseUp(const juce::MouseEvent& evt) override { updateLoopCues(evt.position.x, evt.mods.isLeftButtonDown()); }
+    void mouseDrag(const juce::MouseEvent& evt) override {
+        const auto leftButtonDown = evt.mods.isLeftButtonDown();
+        updateLoopCues(evt.position.x, leftButtonDown);
+        if (leftButtonDown) viewer.freeze(jif.loopStart);
+        else viewer.freeze(jif.loopEnd - 1);
+    }
+    void mouseUp(const juce::MouseEvent& evt) override {
+        updateLoopCues(evt.position.x, evt.mods.isLeftButtonDown());
+        viewer.unfreeze();
+    }
     void updateLoopCues(float x, bool leftButtonDown) {
         const auto numImagesInt = static_cast<int>(jif.numImages());
         const auto numImages = static_cast<float>(numImagesInt);
         const auto width = static_cast<float>(getWidth());
         if (leftButtonDown)
-            jif.loopStart = juce::jlimit(0, jif.loopEnd - 1, static_cast<int>(std::floor(x / width * numImages)));
-        else {
+            jif.loopStart = juce::jlimit(0, jif.loopEnd - 1, static_cast<int>(std::floor(x / width * numImages))); 
+        else
             jif.loopEnd = juce::jlimit(jif.loopStart + 1, numImagesInt, static_cast<int>(std::ceil(x / width * numImages)));
-        }
-            
         auto& state = processor.apvts.state;
         state.setProperty("loopStart", jif.loopStart, nullptr);
         state.setProperty("loopEnd", jif.loopEnd, nullptr);
@@ -205,28 +240,29 @@ protected:
 struct ControlsEditor :
     public juce::Component
 {
-    ControlsEditor(JIFAudioProcessor& p, jif::JIF& jif, std::function<void()> loadFunc) :
+    ControlsEditor(JIFAudioProcessor& p, JIFViewer& v) :
         processor(p),
+        viewer(v),
         mainColour(getMainColour()),
         cFont(getCustomFont()),
         titleLabel("JIF*", 42, mainColour, juce::Justification::centred),
         subTitleLabel("by Florian Mrugalla", 12, mainColour, juce::Justification::centredBottom),
-        reloadButton(juce::ImageCache::getFromMemory(BinaryData::loadJIF_png, BinaryData::loadJIF_pngSize), loadFunc, mainColour),
-        loopRangeParam(p, jif),
+        reloadButton(juce::ImageCache::getFromMemory(BinaryData::loadJIF_png, BinaryData::loadJIF_pngSize), [this]() { viewer.tryLoadWithFileChooser(); }, mainColour),
+        loopRangeParam(p, viewer),
         speedKnob(processor.apvts, param::ID::Speed, mainColour),
-        phaseKnob(processor.apvts, param::ID::Phase, mainColour),
+        phaseKnob(processor.apvts, param::ID::Phase, mainColour, viewer),
         discord("Discord", "https://discord.gg/xpTGJJNAZG", 12, mainColour),
         github("Github", "https://github.com/Mrugalla", 12, mainColour),
         paypal("Paypal", "https://www.paypal.com/paypalme/alteoma", 12, mainColour)
     {
-        cFont.setExtraKerningFactor(.05f);
+       cFont.setExtraKerningFactor(.05f);
         discord.setFont(cFont, false);
         github.setFont(cFont, false);
         paypal.setFont(cFont, false);
         addAndMakeVisible(titleLabel);
         addAndMakeVisible(subTitleLabel);
         addAndMakeVisible(reloadButton);
-        addAndMakeVisible(loopRangeParam);
+        addAndMakeVisible(loopRangeParam); viewer.addListener(&loopRangeParam);
         addAndMakeVisible(speedKnob);
         addAndMakeVisible(phaseKnob);
         addAndMakeVisible(discord);
@@ -235,12 +271,14 @@ struct ControlsEditor :
     }
 protected:
     JIFAudioProcessor& processor;
+    JIFViewer& viewer;
     juce::Colour mainColour;
     juce::Font cFont;
     Label titleLabel, subTitleLabel;
     Button reloadButton;
     LoopRangeParam loopRangeParam;
-    Knob speedKnob, phaseKnob;
+    Knob speedKnob;
+    PhaseKnob phaseKnob;
     Link discord, github, paypal;
 
     void paint(juce::Graphics& g) override {
@@ -284,19 +322,13 @@ protected:
         y += thingsHeight;
     }
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ControlsEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ControlsEditor)
 };
 
 /* to do
 * 
 * frame drop less
 *   alternate thread?
-* 
-* visual glitches in controlseditor
-*   approach 0:
-*       rewrite so that controlsEditor is always there, but not visible.
-*       if visible opaque with gif running in corner.
-*       when dragging phase show start image frozen
 * 
 * reverse button?
 *   erfordert loopup table jif

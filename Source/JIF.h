@@ -422,6 +422,7 @@ namespace jif {
     struct JIF {
         JIF() :
             images(),
+            bgColour(0x00000000),
             readIdx(0),
             lastReadIdx(0),
             loopStart(0),
@@ -431,6 +432,7 @@ namespace jif {
         }
         JIF(const void* jifData, const size_t jifSize) :
             images(),
+            bgColour(0x00000000),
             readIdx(0),
             lastReadIdx(0),
             loopStart(0),
@@ -472,10 +474,6 @@ namespace jif {
         const size_t numImages() const noexcept { return images.size(); }
         void paint(juce::Graphics& g, const juce::Rectangle<float>& bounds) {
             if (!images.empty()) {
-                if (readIdx >= loopEnd) {
-                    readIdx = loopStart;
-                    g.fillAll(bgColour);
-                }
                 if (lastReadIdx < readIdx)
                     for (auto i = lastReadIdx + 1; i <= readIdx; ++i)
                         images[i].paint(g, bounds);
@@ -491,7 +489,7 @@ namespace jif {
             g.setColour(juce::Colours::white);
             g.drawFittedText("Click here\nto import a\nJIF!", bounds.toNearestInt(), juce::Justification::centred, 1);
         }
-        void operator++() { ++readIdx; }
+        void operator++() { ++readIdx; if (readIdx >= loopEnd) readIdx = loopStart; }
         void resetAnimation() { readIdx = 0; }
         /* returns true if should repaint (readIdx != newReadIdx && numImages() != 0) */
         bool setFrameTo(float phase, const float offset) noexcept {
@@ -503,6 +501,12 @@ namespace jif {
             if (readIdx == newReadIdx) return false;
             readIdx = newReadIdx;
             return true;
+        }
+        bool setFrameTo(const int imgIdx) noexcept {
+            const bool changed = readIdx != imgIdx;
+            if(changed)
+                readIdx = imgIdx;
+            return changed;
         }
         const bool empty() const noexcept { return images.empty(); }
 
