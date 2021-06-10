@@ -91,7 +91,7 @@ protected:
             ++jif;
             return triggerRepaint();
         }
-        if (!processor.isPlaying.load()) return;
+        if (!processor.isPlaying.load()) return updateListeners();
         const auto ppq = processor.ppq.load();
         const auto phase = processor.phase->load();
         if (jif.setFrameTo(ppq, phase))
@@ -99,6 +99,9 @@ protected:
     }
     void triggerRepaint() {
         handleAsyncUpdate();
+        updateListeners();
+    }
+    void updateListeners() {
         for (auto comp : listeners)
             comp->viewerUpdated();
     }
@@ -128,3 +131,14 @@ protected:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(JIFViewer)
 };
+
+/* to do
+*
+* if(!isPlaying) still be able to open controls editor
+* 
+* frame drop less
+*   alternate thread?
+*
+* reverse button?
+*   erfordert loopup table jif
+*/
