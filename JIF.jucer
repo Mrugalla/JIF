@@ -9,6 +9,7 @@
       <FILE id="sCpWSm" name="readme.txt" compile="0" resource="1" file="Source/font/readme.txt"/>
     </GROUP>
     <GROUP id="{29889163-DC55-EDEE-A768-6E3C359E36DC}" name="Source">
+      <FILE id="hoWGaw" name="saveWT.png" compile="0" resource="1" file="Source/saveWT.png"/>
       <FILE id="o4Zr06" name="JIFViewer.h" compile="0" resource="0" file="Source/JIFViewer.h"/>
       <FILE id="Ltlbex" name="Param.h" compile="0" resource="0" file="Source/Param.h"/>
       <FILE id="CQ9lWX" name="loadJIF.png" compile="0" resource="1" file="Source/loadJIF.png"/>

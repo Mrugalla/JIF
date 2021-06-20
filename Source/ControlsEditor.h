@@ -173,6 +173,8 @@ protected:
             g.drawImage(img, getLocalBounds().toFloat());
     }
     void mouseUp(const juce::MouseEvent&) override { onClickFunc(); }
+    void mouseEnter(const juce::MouseEvent&) override { repaint(); }
+    void mouseExit(const juce::MouseEvent&) override { repaint(); }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Button)
 };
@@ -248,6 +250,7 @@ struct ControlsEditor :
         titleLabel("JIF*", 42, mainColour, juce::Justification::centred),
         subTitleLabel("by Florian Mrugalla", 12, mainColour, juce::Justification::centredBottom),
         reloadButton(juce::ImageCache::getFromMemory(BinaryData::loadJIF_png, BinaryData::loadJIF_pngSize), [this]() { viewer.tryLoadWithFileChooser(); }, mainColour),
+        saveWTButton(juce::ImageCache::getFromMemory(BinaryData::saveWT_png, BinaryData::saveWT_pngSize), [this]() { viewer.saveWavetable(); }, mainColour),
         loopRangeParam(p, viewer),
         speedKnob(processor.apvts, param::ID::Speed, mainColour),
         phaseKnob(processor.apvts, param::ID::Phase, mainColour, viewer),
@@ -262,6 +265,7 @@ struct ControlsEditor :
         addAndMakeVisible(titleLabel);
         addAndMakeVisible(subTitleLabel);
         addAndMakeVisible(reloadButton);
+        addAndMakeVisible(saveWTButton);
         addAndMakeVisible(loopRangeParam); viewer.addListener(&loopRangeParam);
         addAndMakeVisible(speedKnob);
         addAndMakeVisible(phaseKnob);
@@ -275,7 +279,7 @@ protected:
     juce::Colour mainColour;
     juce::Font cFont;
     Label titleLabel, subTitleLabel;
-    Button reloadButton;
+    Button reloadButton, saveWTButton;
     LoopRangeParam loopRangeParam;
     Knob speedKnob;
     PhaseKnob phaseKnob;
@@ -310,16 +314,16 @@ protected:
         phaseKnob.setBounds(juce::Rectangle<float>(x, y, knobsWidth, knobsHeight).toNearestInt());
         x = 0.f;
         y += knobsHeight;
-        const auto buttonsWidth = width / 4.f;
+        const auto buttonsWidth = width / 5.f;
         discord.setBounds(juce::Rectangle<float>(x, y, buttonsWidth, thingsHeight).toNearestInt());
         x += buttonsWidth;
         github.setBounds(juce::Rectangle<float>(x, y, buttonsWidth, thingsHeight).toNearestInt());
         x += buttonsWidth;
         paypal.setBounds(juce::Rectangle<float>(x, y, buttonsWidth, thingsHeight).toNearestInt());
         x += buttonsWidth;
+        saveWTButton.setBounds(juce::Rectangle<float>(x, y, buttonsWidth, thingsHeight).toNearestInt());
+        x += buttonsWidth;
         reloadButton.setBounds(juce::Rectangle<float>(x, y, buttonsWidth, thingsHeight).toNearestInt());
-        x = 0.f;
-        y += thingsHeight;
     }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ControlsEditor)

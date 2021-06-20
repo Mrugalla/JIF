@@ -424,7 +424,7 @@ namespace jif {
             images(),
             bgColour(0x00000000),
             readIdx(0),
-            lastReadIdx(0),
+            lastReadIdx(-1),
             loopStart(0),
             loopEnd(0),
             startIdx(0)
@@ -470,6 +470,7 @@ namespace jif {
             
             loopStart = startIdx = 0;
             loopEnd = numImages();
+            lastReadIdx = -1;
         }
         const size_t numImages() const noexcept { return images.size(); }
         void paint(juce::Graphics& g, const juce::Rectangle<float>& bounds) {
@@ -481,7 +482,7 @@ namespace jif {
                     g.fillAll(bgColour);
                     for (auto i = 0; i <= readIdx; ++i)
                         images[i].paint(g, bounds);
-                }   
+                }
                 lastReadIdx = readIdx;
                 return;
             }
