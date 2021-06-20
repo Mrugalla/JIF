@@ -8,6 +8,7 @@ Features:
 - loop times: 1/4, 1/2, 1, 2, 4 bars
 - change the phase of the loop (start image)
 - link to my development discord (feature requests, bug reports, getting informed about updates)
+- save gif as wavetables that you can import in serum / vital etc.
 - link to this github (also for updates)
 - link to paypal (if you're cool) ;)
 
