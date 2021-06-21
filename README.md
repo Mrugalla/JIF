@@ -14,5 +14,6 @@ Features:
 
 Known issues:
 - In FL using the phase parameter before loading a gif can apparently show a questionable error message. it doesn't seem to break things but should be avoided until fixed
+- it should be noted that the graphics are glitchy in the menu. don't let that discourage you. they get back to normal once the mouse gets off the window anyway
 
 ![image](https://user-images.githubusercontent.com/54960398/120898923-6b3e3900-c62d-11eb-83bf-148d796b4515.png)
