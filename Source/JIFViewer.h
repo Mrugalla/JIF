@@ -27,7 +27,10 @@ struct JIFViewer :
     void addListener(JIFViewerListener* c) { listeners.push_back(c); }
     void setFont(const juce::Font& f) noexcept { cFont = f; }
     void tryLoadWithFileChooser() {
-        const auto& state = processor.apvts.state;
+        freeze(0);
+        juce::CriticalSection mutex;
+        juce::ScopedLock lock(mutex);
+        const auto state = processor.apvts.state;
         const juce::String dialogBoxTitle("Load a JIF!");
         const juce::String initDirectory = state.getProperty("directory", "");
         bool managedToLoad = false;
@@ -43,6 +46,7 @@ struct JIFViewer :
                 managedToLoad = tryLoad(chooser.getResult().getFullPathName());
         }
         if (!managedToLoad) return;
+        unfreeze();
     }
     bool tryLoad(const juce::String& path) {
         if (path.endsWith(".gif")) {

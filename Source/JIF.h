@@ -516,3 +516,10 @@ namespace jif {
         int readIdx, lastReadIdx, loopStart, loopEnd, startIdx;
     };
 }
+
+/*
+debug
+D:\Pogramme\Cubase 9.5\Cubase9.5.exe
+D:\Pogramme\FL Studio 20\FL64.exe
+
+*/
